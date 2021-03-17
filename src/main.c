@@ -20,6 +20,7 @@
 #include <config.h>
 #endif
 
+#include <locale.h>
 #include <inttypes.h>
 #include <stdarg.h>
 #include <stdbool.h>
@@ -28,27 +29,33 @@
 #include <uiohook.h>
 #include <wchar.h>
 
-bool logger_proc(unsigned int level, const char *format, ...) {
-    bool status = false;
-    
-    va_list args;
-    switch (level) {
-        case LOG_LEVEL_INFO:
-            va_start(args, format);
-            status = vfprintf(stdout, format, args) >= 0;
-            va_end(args);
-            break;
+# define MASK_MOD MASK_SHIFT | MASK_CTRL | MASK_META | MASK_ALT
 
-        case LOG_LEVEL_WARN:
-        case LOG_LEVEL_ERROR:
-            va_start(args, format);
-            status = vfprintf(stderr, format, args) >= 0;
-            va_end(args);
-            break;
-    }
-    
-    return status;
+bool logger_proc(unsigned int level, const char *format, ...) {
+    return true;
 }
+
+/* bool logger_proc(unsigned int level, const char *format, ...) { */
+/*     bool status = false; */
+    
+/*     va_list args; */
+/*     switch (level) { */
+/*         case LOG_LEVEL_INFO: */
+/*             va_start(args, format); */
+/*             status = vfprintf(stdout, format, args) >= 0; */
+/*             va_end(args); */
+/*             break; */
+
+/*         case LOG_LEVEL_WARN: */
+/*         case LOG_LEVEL_ERROR: */
+/*             va_start(args, format); */
+/*             status = vfprintf(stderr, format, args) >= 0; */
+/*             va_end(args); */
+/*             break; */
+/*     } */
+    
+/*     return status; */
+/* } */
 
 // NOTE: The following callback executes on the same thread that hook_run() is called 
 // from.  This is important because hook_run() attaches to the operating systems
@@ -57,77 +64,38 @@ bool logger_proc(unsigned int level, const char *format, ...) {
 // takes too long to process.  If you need to do any extended processing, please 
 // do so by copying the event to your own queued dispatch thread.
 void dispatch_proc(uiohook_event * const event) {
-    char buffer[256] = { 0 };
-    size_t length = snprintf(buffer, sizeof(buffer), 
-            "id=%i,when=%" PRIu64 ",mask=0x%X", 
-            event->type, event->time, event->mask);
-    
     switch (event->type) {
+        // Handle special keycodes
         case EVENT_KEY_PRESSED:
-            // If the escape key is pressed, naturally terminate the program.
-            if (event->data.keyboard.keycode == VC_ESCAPE) {
-                int status = hook_stop();
-                switch (status) {
-                    case UIOHOOK_SUCCESS:
-                        // Everything is ok.
-                        break;
-
-                    // System level errors.
-                    case UIOHOOK_ERROR_OUT_OF_MEMORY:
-                        logger_proc(LOG_LEVEL_ERROR, "Failed to allocate memory. (%#X)", status);
-                        break;
-            
-                    case UIOHOOK_ERROR_X_RECORD_GET_CONTEXT:
-                        // NOTE This is the only platform specific error that occurs on hook_stop().
-                        logger_proc(LOG_LEVEL_ERROR, "Failed to get XRecord context. (%#X)", status);
-                        break;
-
-                    // Default error.
-                    case UIOHOOK_FAILURE:
-                    default:
-                        logger_proc(LOG_LEVEL_ERROR, "An unknown hook error occurred. (%#X)", status);
-                        break;
-                }
+            switch (event->data.keyboard.keycode) {
+                case VC_ENTER:
+                    fprintf(stdout, "<cr>");
+                    return;
             }
-        case EVENT_KEY_RELEASED:
-            snprintf(buffer + length, sizeof(buffer) - length, 
-                ",keycode=%u,rawcode=0x%X",
-                event->data.keyboard.keycode, event->data.keyboard.rawcode);
-            break;
 
+        // Handle "alphanumerical" keypresses
         case EVENT_KEY_TYPED:
-            snprintf(buffer + length, sizeof(buffer) - length, 
-                ",keychar=%lc,rawcode=%u",
-                (wint_t) event->data.keyboard.keychar,
-                event->data.keyboard.rawcode);
-            break;
+            printf("wtf");
+            fprintf(stdout,
+                 "Typ(%d, %d, %d)[%lc]",
+                 event->data.keyboard.keycode,
+                 event->data.keyboard.rawcode,
+                 event->data.keyboard.keychar,
+                 event->data.keyboard.rawcode
+            );
+            return;
 
-        case EVENT_MOUSE_PRESSED:
-        case EVENT_MOUSE_RELEASED:
-        case EVENT_MOUSE_CLICKED:
-        case EVENT_MOUSE_MOVED:
-        case EVENT_MOUSE_DRAGGED:
-            snprintf(buffer + length, sizeof(buffer) - length, 
-                ",x=%i,y=%i,button=%i,clicks=%i",
-                event->data.mouse.x, event->data.mouse.y,
-                event->data.mouse.button, event->data.mouse.clicks);
-            break;
-
-        case EVENT_MOUSE_WHEEL:
-            snprintf(buffer + length, sizeof(buffer) - length, 
-                ",type=%i,amount=%i,rotation=%i",
-                event->data.wheel.type, event->data.wheel.amount,
-                event->data.wheel.rotation);
-            break;
-
+        // Ignore everything else
+        // TODO: Log error
         default:
-            break;
+            return; 
     }
-
-    fprintf(stdout, "%s\n",     buffer);
 }
 
 int main() {
+    // Set locale
+    setlocale(LC_CTYPE, "");
+
     // Set the logger callback for library output.
     hook_set_logger_proc(&logger_proc);
     
