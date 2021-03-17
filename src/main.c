@@ -20,6 +20,7 @@
 #include <config.h>
 #endif
 
+#include <locale.h>
 #include <inttypes.h>
 #include <stdarg.h>
 #include <stdbool.h>
@@ -28,26 +29,19 @@
 #include <uiohook.h>
 #include <wchar.h>
 
-bool logger_proc(unsigned int level, const char *format, ...) {
-    bool status = false;
-    
-    va_list args;
-    switch (level) {
-        case LOG_LEVEL_INFO:
-            va_start(args, format);
-            status = vfprintf(stdout, format, args) >= 0;
-            va_end(args);
-            break;
-
-        case LOG_LEVEL_WARN:
-        case LOG_LEVEL_ERROR:
-            va_start(args, format);
-            status = vfprintf(stderr, format, args) >= 0;
-            va_end(args);
-            break;
+const char* special_key_to_escape_code(uint16_t key) {
+    switch (key) {
+        case VC_ENTER:
+            return "<cr>";
+        case VC_ESCAPE:
+            return "<esc>";
+        default:
+            return NULL;
     }
-    
-    return status;
+}
+
+bool logger_proc(unsigned int level, const char *format, ...) {
+    return true;
 }
 
 // NOTE: The following callback executes on the same thread that hook_run() is called 
@@ -58,76 +52,56 @@ bool logger_proc(unsigned int level, const char *format, ...) {
 // do so by copying the event to your own queued dispatch thread.
 void dispatch_proc(uiohook_event * const event) {
     char buffer[256] = { 0 };
-    size_t length = snprintf(buffer, sizeof(buffer), 
-            "id=%i,when=%" PRIu64 ",mask=0x%X", 
-            event->type, event->time, event->mask);
+    size_t length = 0;
     
-    switch (event->type) {
-        case EVENT_KEY_PRESSED:
-            // If the escape key is pressed, naturally terminate the program.
-            if (event->data.keyboard.keycode == VC_ESCAPE) {
-                int status = hook_stop();
-                switch (status) {
-                    case UIOHOOK_SUCCESS:
-                        // Everything is ok.
-                        break;
-
-                    // System level errors.
-                    case UIOHOOK_ERROR_OUT_OF_MEMORY:
-                        logger_proc(LOG_LEVEL_ERROR, "Failed to allocate memory. (%#X)", status);
-                        break;
-            
-                    case UIOHOOK_ERROR_X_RECORD_GET_CONTEXT:
-                        // NOTE This is the only platform specific error that occurs on hook_stop().
-                        logger_proc(LOG_LEVEL_ERROR, "Failed to get XRecord context. (%#X)", status);
-                        break;
-
-                    // Default error.
-                    case UIOHOOK_FAILURE:
-                    default:
-                        logger_proc(LOG_LEVEL_ERROR, "An unknown hook error occurred. (%#X)", status);
-                        break;
-                }
-            }
-        case EVENT_KEY_RELEASED:
-            snprintf(buffer + length, sizeof(buffer) - length, 
-                ",keycode=%u,rawcode=0x%X",
-                event->data.keyboard.keycode, event->data.keyboard.rawcode);
-            break;
-
-        case EVENT_KEY_TYPED:
-            snprintf(buffer + length, sizeof(buffer) - length, 
-                ",keychar=%lc,rawcode=%u",
-                (wint_t) event->data.keyboard.keychar,
-                event->data.keyboard.rawcode);
-            break;
-
-        case EVENT_MOUSE_PRESSED:
-        case EVENT_MOUSE_RELEASED:
-        case EVENT_MOUSE_CLICKED:
-        case EVENT_MOUSE_MOVED:
-        case EVENT_MOUSE_DRAGGED:
-            snprintf(buffer + length, sizeof(buffer) - length, 
-                ",x=%i,y=%i,button=%i,clicks=%i",
-                event->data.mouse.x, event->data.mouse.y,
-                event->data.mouse.button, event->data.mouse.clicks);
-            break;
-
-        case EVENT_MOUSE_WHEEL:
-            snprintf(buffer + length, sizeof(buffer) - length, 
-                ",type=%i,amount=%i,rotation=%i",
-                event->data.wheel.type, event->data.wheel.amount,
-                event->data.wheel.rotation);
-            break;
-
-        default:
-            break;
+    void write_buffer_to_stdout() {
+        fprintf(stdout, "%s\n", buffer);
     }
 
-    fprintf(stdout, "%s\n",     buffer);
+    // Handle special keycodes
+    if (event->type == EVENT_KEY_PRESSED) {
+        const char* escape_code =
+            special_key_to_escape_code(event->data.keyboard.keycode);
+
+        if (escape_code) {
+            length = snprintf(
+                buffer + length, sizeof(buffer) - length, 
+                escape_code
+            );
+            write_buffer_to_stdout(); return; // return to skip processing this keypress as normal key
+        } else {
+            // Continue since key presses can be normal keys
+            ;
+        }
+    }
+
+    switch (event->type) {
+        // Ignore release events
+        case EVENT_KEY_RELEASED:
+            /* Ignore */ return;
+
+        // Handle "normal" or "alphanumerical" keypresses
+        case EVENT_KEY_TYPED:
+            length = snprintf(buffer + length, sizeof(buffer) - length, 
+                 "Typ(%d, %d, %d)[%lc]",
+                 event->data.keyboard.keycode,
+                 event->data.keyboard.rawcode,
+                 event->data.keyboard.keychar,
+                 event->data.keyboard.rawcode
+            );
+            write_buffer_to_stdout(); return;
+
+        // Ignore everything else
+        // TODO: Log error
+        default:
+            return;
+    }
 }
 
 int main() {
+    // Set locale
+    setlocale(LC_CTYPE, "");
+
     // Set the logger callback for library output.
     hook_set_logger_proc(&logger_proc);
     
