@@ -20,6 +20,7 @@
 #include <config.h>
 #endif
 
+#include <locale.h>
 #include <inttypes.h>
 #include <stdarg.h>
 #include <stdbool.h>
@@ -27,6 +28,17 @@
 #include <string.h>
 #include <uiohook.h>
 #include <wchar.h>
+
+const char* special_key_to_escape_code(uint16_t key) {
+    switch (key) {
+        case VC_ENTER:
+            return "<cr>";
+        case VC_ESCAPE:
+            return "<esc>";
+        default:
+            return NULL;
+    }
+}
 
 bool logger_proc(unsigned int level, const char *format, ...) {
     return true;
@@ -46,20 +58,29 @@ void dispatch_proc(uiohook_event * const event) {
         fprintf(stdout, "%s\n", buffer);
     }
 
-    switch (event->type) {
-        // Handle special keycodes
-        case EVENT_KEY_PRESSED:
-            #define kcode event->data.keyboard.keycode
-            if (kcode == VC_ENTER) {
-                length = snprintf(
-                    buffer + length, sizeof(buffer) - length, 
-                    "<cr>"
-                );
-                write_buffer_to_stdout(); return;
-            }
-            // don't break...
+    // Handle special keycodes
+    if (event->type == EVENT_KEY_PRESSED) {
+        const char* escape_code =
+            special_key_to_escape_code(event->data.keyboard.keycode);
 
-        // Handle "alphanumerical" keypresses
+        if (escape_code) {
+            length = snprintf(
+                buffer + length, sizeof(buffer) - length, 
+                escape_code
+            );
+            write_buffer_to_stdout(); return; // return to skip processing this keypress as normal key
+        } else {
+            // Continue since key presses can be normal keys
+            ;
+        }
+    }
+
+    switch (event->type) {
+        // Ignore release events
+        case EVENT_KEY_RELEASED:
+            /* Ignore */ return;
+
+        // Handle "normal" or "alphanumerical" keypresses
         case EVENT_KEY_TYPED:
             length = snprintf(buffer + length, sizeof(buffer) - length, 
                  "Typ(%d, %d, %d)[%lc]",
@@ -78,6 +99,9 @@ void dispatch_proc(uiohook_event * const event) {
 }
 
 int main() {
+    // Set locale
+    setlocale(LC_CTYPE, "");
+
     // Set the logger callback for library output.
     hook_set_logger_proc(&logger_proc);
     
