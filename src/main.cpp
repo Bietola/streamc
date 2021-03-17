@@ -7,6 +7,10 @@
 #include <uiohook.h>
 #include <wchar.h>
 
+#include <json.hpp>
+
+using json = nlohmann::json;
+
 const char* special_key_to_escape_code(uint16_t key) {
     switch (key) {
         case VC_ENTER:
