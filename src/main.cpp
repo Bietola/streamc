@@ -1,25 +1,3 @@
-/* libUIOHook: Cross-platform keyboard and mouse hooking from userland.
- * Copyright (C) 2006-2020 Alexander Barker.  All Rights Received.
- * https://github.com/kwhat/libuiohook/
- *
- * libUIOHook is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published
- * by the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * libUIOHook is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
-
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #include <locale.h>
 #include <inttypes.h>
 #include <stdarg.h>
@@ -54,9 +32,9 @@ void dispatch_proc(uiohook_event * const event) {
     char buffer[256] = { 0 };
     size_t length = 0;
     
-    void write_buffer_to_stdout() {
+    auto write_buffer_to_stdout = [&] {
         fprintf(stdout, "%s\n", buffer);
-    }
+    };
 
     // Handle special keycodes
     if (event->type == EVENT_KEY_PRESSED) {
@@ -83,10 +61,7 @@ void dispatch_proc(uiohook_event * const event) {
         // Handle "normal" or "alphanumerical" keypresses
         case EVENT_KEY_TYPED:
             length = snprintf(buffer + length, sizeof(buffer) - length, 
-                 "Typ(%d, %d, %d)[%lc]",
-                 event->data.keyboard.keycode,
-                 event->data.keyboard.rawcode,
-                 event->data.keyboard.keychar,
+                 "%lc",
                  event->data.keyboard.rawcode
             );
             write_buffer_to_stdout(); return;
