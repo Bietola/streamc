@@ -42,21 +42,22 @@ void dispatch_proc(uiohook_event * const event) {
     char buffer[256] = { 0 };
     size_t length = 0;
     
+    void write_buffer_to_stdout() {
+        fprintf(stdout, "%s\n", buffer);
+    }
+
     switch (event->type) {
         // Handle special keycodes
         case EVENT_KEY_PRESSED:
-            switch (event->data.keyboard.keycode) {
-                case VC_ENTER:
-                    length = snprintf(
-                        buffer + length, sizeof(buffer) - length, 
-                        "<cr>"
-                    );
-                    goto BreakOuter;
-                default:
-                    goto ContinueOuter;
+            #define kcode event->data.keyboard.keycode
+            if (kcode == VC_ENTER) {
+                length = snprintf(
+                    buffer + length, sizeof(buffer) - length, 
+                    "<cr>"
+                );
+                write_buffer_to_stdout(); return;
             }
-            BreakOuter: break;
-            ContinueOuter: ;
+            // don't break...
 
         // Handle "alphanumerical" keypresses
         case EVENT_KEY_TYPED:
@@ -67,15 +68,13 @@ void dispatch_proc(uiohook_event * const event) {
                  event->data.keyboard.keychar,
                  event->data.keyboard.rawcode
             );
-            break;
+            write_buffer_to_stdout(); return;
 
         // Ignore everything else
         // TODO: Log error
         default:
             return;
     }
-
-    fprintf(stdout, "%s\n",     buffer);
 }
 
 int main() {
