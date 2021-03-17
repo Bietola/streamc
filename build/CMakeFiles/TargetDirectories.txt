@@ -1,0 +1,3 @@
+/home/dincio/code/tmp-c-hook/build/CMakeFiles/rebuild_cache.dir
+/home/dincio/code/tmp-c-hook/build/CMakeFiles/edit_cache.dir
+/home/dincio/code/tmp-c-hook/build/CMakeFiles/Proj.dir

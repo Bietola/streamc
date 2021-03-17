@@ -1,0 +1,3 @@
+#!/bin/sh
+
+gcc -I include -L lib/libuiohook.a -luiohook src/main.c
