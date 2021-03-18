@@ -1,5 +1,0 @@
-/home/dincio/code/tmp-c-hook/build/CMakeFiles/rebuild_cache.dir
-/home/dincio/code/tmp-c-hook/build/CMakeFiles/edit_cache.dir
-/home/dincio/code/tmp-c-hook/build/CMakeFiles/streamc.dir
-/home/dincio/code/tmp-c-hook/build/_deps/json-build/CMakeFiles/edit_cache.dir
-/home/dincio/code/tmp-c-hook/build/_deps/json-build/CMakeFiles/rebuild_cache.dir

@@ -1,11 +1,13 @@
-#include <locale.h>
-#include <inttypes.h>
-#include <stdarg.h>
-#include <stdbool.h>
-#include <stdio.h>
-#include <string.h>
-#include <uiohook.h>
-#include <wchar.h>
+extern "C" {
+    #include <locale.h>
+    #include <inttypes.h>
+    #include <stdarg.h>
+    #include <stdbool.h>
+    #include <stdio.h>
+    #include <string.h>
+    #include <uiohook.h>
+    #include <wchar.h>
+}
 
 #include <iostream>
 

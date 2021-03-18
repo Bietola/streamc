@@ -32,6 +32,7 @@ if(NOT json_POPULATED)
 endif()
 
 # Link libraries
+link_directories(${CMAKE_CURRENT_SOURCE_DIR}/lib)
 target_link_libraries(streamc PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}/lib/libuiohook.a
+    uiohook
     nlohmann_json::nlohmann_json)
