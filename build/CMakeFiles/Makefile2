@@ -72,7 +72,7 @@ CMAKE_BINARY_DIR = /home/dincio/code/tmp-c-hook/build
 # Directory level rules for the build root directory
 
 # The main recursive "all" target.
-all: CMakeFiles/Proj.dir/all
+all: CMakeFiles/streamc.dir/all
 
 .PHONY : all
 
@@ -82,36 +82,55 @@ preinstall:
 .PHONY : preinstall
 
 # The main recursive "clean" target.
-clean: CMakeFiles/Proj.dir/clean
+clean: CMakeFiles/streamc.dir/clean
+clean: _deps/json-build/clean
 
 .PHONY : clean
 
 #=============================================================================
-# Target rules for target CMakeFiles/Proj.dir
+# Directory level rules for directory _deps/json-build
+
+# Recursive "all" directory target.
+_deps/json-build/all:
+
+.PHONY : _deps/json-build/all
+
+# Recursive "preinstall" directory target.
+_deps/json-build/preinstall:
+
+.PHONY : _deps/json-build/preinstall
+
+# Recursive "clean" directory target.
+_deps/json-build/clean:
+
+.PHONY : _deps/json-build/clean
+
+#=============================================================================
+# Target rules for target CMakeFiles/streamc.dir
 
 # All Build rule for target.
-CMakeFiles/Proj.dir/all:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Proj.dir/build.make CMakeFiles/Proj.dir/depend
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Proj.dir/build.make CMakeFiles/Proj.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/dincio/code/tmp-c-hook/build/CMakeFiles --progress-num=1,2 "Built target Proj"
-.PHONY : CMakeFiles/Proj.dir/all
+CMakeFiles/streamc.dir/all:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/streamc.dir/build.make CMakeFiles/streamc.dir/depend
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/streamc.dir/build.make CMakeFiles/streamc.dir/build
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --progress-dir=/home/dincio/code/tmp-c-hook/build/CMakeFiles --progress-num=1,2 "Built target streamc"
+.PHONY : CMakeFiles/streamc.dir/all
 
 # Build rule for subdir invocation for target.
-CMakeFiles/Proj.dir/rule: cmake_check_build_system
+CMakeFiles/streamc.dir/rule: cmake_check_build_system
 	$(CMAKE_COMMAND) -E cmake_progress_start /home/dincio/code/tmp-c-hook/build/CMakeFiles 2
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 CMakeFiles/Proj.dir/all
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 CMakeFiles/streamc.dir/all
 	$(CMAKE_COMMAND) -E cmake_progress_start /home/dincio/code/tmp-c-hook/build/CMakeFiles 0
-.PHONY : CMakeFiles/Proj.dir/rule
+.PHONY : CMakeFiles/streamc.dir/rule
 
 # Convenience name for target.
-Proj: CMakeFiles/Proj.dir/rule
+streamc: CMakeFiles/streamc.dir/rule
 
-.PHONY : Proj
+.PHONY : streamc
 
 # clean rule for target.
-CMakeFiles/Proj.dir/clean:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Proj.dir/build.make CMakeFiles/Proj.dir/clean
-.PHONY : CMakeFiles/Proj.dir/clean
+CMakeFiles/streamc.dir/clean:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/streamc.dir/build.make CMakeFiles/streamc.dir/clean
+.PHONY : CMakeFiles/streamc.dir/clean
 
 #=============================================================================
 # Special targets to cleanup operation of make.

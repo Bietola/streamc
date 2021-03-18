@@ -130,44 +130,44 @@ depend:
 .PHONY : depend
 
 #=============================================================================
-# Target rules for targets named Proj
+# Target rules for targets named streamc
 
 # Build rule for target.
-Proj: cmake_check_build_system
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 Proj
-.PHONY : Proj
+streamc: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 streamc
+.PHONY : streamc
 
 # fast build rule for target.
-Proj/fast:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Proj.dir/build.make CMakeFiles/Proj.dir/build
-.PHONY : Proj/fast
+streamc/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/streamc.dir/build.make CMakeFiles/streamc.dir/build
+.PHONY : streamc/fast
 
-src/main.o: src/main.c.o
+src/main.o: src/main.cpp.o
 
 .PHONY : src/main.o
 
 # target to build an object file
-src/main.c.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Proj.dir/build.make CMakeFiles/Proj.dir/src/main.c.o
-.PHONY : src/main.c.o
+src/main.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/streamc.dir/build.make CMakeFiles/streamc.dir/src/main.cpp.o
+.PHONY : src/main.cpp.o
 
-src/main.i: src/main.c.i
+src/main.i: src/main.cpp.i
 
 .PHONY : src/main.i
 
 # target to preprocess a source file
-src/main.c.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Proj.dir/build.make CMakeFiles/Proj.dir/src/main.c.i
-.PHONY : src/main.c.i
+src/main.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/streamc.dir/build.make CMakeFiles/streamc.dir/src/main.cpp.i
+.PHONY : src/main.cpp.i
 
-src/main.s: src/main.c.s
+src/main.s: src/main.cpp.s
 
 .PHONY : src/main.s
 
 # target to generate assembly for a file
-src/main.c.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Proj.dir/build.make CMakeFiles/Proj.dir/src/main.c.s
-.PHONY : src/main.c.s
+src/main.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/streamc.dir/build.make CMakeFiles/streamc.dir/src/main.cpp.s
+.PHONY : src/main.cpp.s
 
 # Help Target
 help:
@@ -177,7 +177,7 @@ help:
 	@echo "... depend"
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
-	@echo "... Proj"
+	@echo "... streamc"
 	@echo "... src/main.o"
 	@echo "... src/main.i"
 	@echo "... src/main.s"

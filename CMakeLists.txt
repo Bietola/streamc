@@ -1,21 +1,37 @@
 # initialize project
-cmake_minimum_required(VERSION 3.5)
-project(Proj VERSION 1.0.0 LANGUAGES C)
+cmake_minimum_required(VERSION 3.11)
+project(streamc VERSION 1.0.0 LANGUAGES CXX)
 
-# load packages
-#TODO: no packages for now
+# CMAKE modules
+include(FetchContent)
 
 # create target executable
-add_executable(Proj src/main.c)
+add_executable(streamc src/main.cpp)
+
+# export compilation database for language servers
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # include directories
-target_include_directories(Proj
+target_include_directories(streamc
     PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 
 # compiler properties
-target_compile_options(Proj PRIVATE -Werror)
+target_compile_options(streamc PRIVATE -Werror)
 
-# link libraries
-#TODO: no libraries for now
+# Fetch content for `nlohmann_json`
+FetchContent_Declare(json
+  GIT_REPOSITORY https://github.com/ArthurSonzogni/nlohmann_json_cmake_fetchcontent
+  GIT_TAG v3.7.3)
+
+FetchContent_GetProperties(json)
+if(NOT json_POPULATED)
+  FetchContent_Populate(json)
+  add_subdirectory(${json_SOURCE_DIR} ${json_BINARY_DIR} EXCLUDE_FROM_ALL)
+endif()
+
+# Link libraries
+target_link_libraries(streamc PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/lib/libuiohook.a
+    nlohmann_json::nlohmann_json)

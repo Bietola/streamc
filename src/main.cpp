@@ -7,7 +7,9 @@
 #include <uiohook.h>
 #include <wchar.h>
 
-#include <json.hpp>
+#include <iostream>
+
+#include <nlohmann/json.hpp>
 
 using json = nlohmann::json;
 
@@ -33,11 +35,12 @@ bool logger_proc(unsigned int level, const char *format, ...) {
 // takes too long to process.  If you need to do any extended processing, please 
 // do so by copying the event to your own queued dispatch thread.
 void dispatch_proc(uiohook_event * const event) {
-    char buffer[256] = { 0 };
-    size_t length = 0;
+    json res = {
+        {"modifiers", json::array()}
+    };
     
-    auto write_buffer_to_stdout = [&] {
-        fprintf(stdout, "%s\n", buffer);
+    auto write_res_to_stdout = [&] {
+        std::cout << res << '\n';
     };
 
     // Handle special keycodes
@@ -46,11 +49,8 @@ void dispatch_proc(uiohook_event * const event) {
             special_key_to_escape_code(event->data.keyboard.keycode);
 
         if (escape_code) {
-            length = snprintf(
-                buffer + length, sizeof(buffer) - length, 
-                escape_code
-            );
-            write_buffer_to_stdout(); return; // return to skip processing this keypress as normal key
+            res["keysym"] = escape_code;
+            write_res_to_stdout(); return; // return to skip processing this keypress as normal key
         } else {
             // Continue since key presses can be normal keys
             ;
@@ -64,11 +64,8 @@ void dispatch_proc(uiohook_event * const event) {
 
         // Handle "normal" or "alphanumerical" keypresses
         case EVENT_KEY_TYPED:
-            length = snprintf(buffer + length, sizeof(buffer) - length, 
-                 "%lc",
-                 event->data.keyboard.rawcode
-            );
-            write_buffer_to_stdout(); return;
+            // res["keysym"] = fmt::format("%lc", event->data.keyboard.rawcode);
+            write_res_to_stdout(); return;
 
         // Ignore everything else
         // TODO: Log error
