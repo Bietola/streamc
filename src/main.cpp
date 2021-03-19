@@ -1,5 +1,4 @@
 extern "C" {
-    #include <locale.h>
     #include <inttypes.h>
     #include <stdarg.h>
     #include <stdbool.h>
@@ -9,21 +8,121 @@ extern "C" {
     #include <wchar.h>
 }
 
+#include <locale>
 #include <iostream>
+#include <sstream>
+#include <algorithm>
 
 #include <nlohmann/json.hpp>
+#include <fmt/format.h>
+
+#include <special_escape_codes.h>
 
 using json = nlohmann::json;
 
-const char* special_key_to_escape_code(uint16_t key) {
-    switch (key) {
-        case VC_ENTER:
-            return "<cr>";
-        case VC_ESCAPE:
-            return "<esc>";
-        default:
-            return NULL;
+namespace mod {
+    // NB. The order of the listed items is reflected an abbreviated mod string
+    enum Mod {
+        Shift = 1,
+        Ctrl,
+        Alt,
+        Super
+    };
+
+    std::string tolower(const std::string& str) {
+        std::string res;
+        for (char c : str) {
+            res.push_back(std::tolower(c));
+        }
+        return res;
     }
+
+    auto from_str(const std::string& str) {
+        if (tolower(str) == "shift") {
+            return Shift;
+        } else if (tolower(str) == "ctrl") {
+            return Ctrl;
+        } else if (tolower(str) == "alt") {
+            return Alt;
+        } else if (tolower(str) == "super") {
+            return Super;
+        } else {
+            std::cerr << "Malformed modifier: " << str << std::endl;
+            assert(false);
+        }
+    }
+
+    char to_abbr(Mod mod) {
+        switch (mod) {
+            case mod::Shift:
+                return 's';
+            case mod::Ctrl:
+                return 'c';
+            case mod::Alt:
+                return 'a';
+            case mod::Super:
+                return 'm';
+            default:
+                assert(false);
+        }
+    };
+
+    auto to_abbr_str(std::vector<Mod> lst) {
+        // NB. Exploits enum to int implicit conversion
+        std::sort(lst.begin(), lst.end());
+
+        std::string res;
+        for (const auto& ele : lst) {
+            res.push_back(to_abbr(ele));
+        }
+        return res;
+    }
+}
+
+struct Key {
+    const std::string keysym = "";
+    const std::vector<mod::Mod> modifiers = {};
+
+    Key() = default;
+
+    const std::string to_dasher_code() const& {
+        bool close_mod = false;
+        std::ostringstream ss;
+
+        // Construct modifier prefix
+        auto mod_prefix = mod::to_abbr_str(modifiers);
+        if (!mod_prefix.empty()) {
+            close_mod = true;
+            ss << '<' << mod_prefix << '-';
+        }
+
+        ss << keysym;
+
+        if (close_mod) {
+            ss << '>';
+        }
+
+        return ss.str();
+    }
+};
+
+std::vector<mod::Mod> parse_modifiers_from_keymask(uint16_t keymask) {
+    std::vector<mod::Mod> res;
+
+    if (keymask & uint16_t(MASK_SHIFT)) {
+        res.push_back(mod::Shift);
+    }
+    if (keymask & uint16_t(MASK_CTRL)) {
+        res.push_back(mod::Ctrl);
+    }
+    if (keymask & uint16_t(MASK_ALT)) {
+        res.push_back(mod::Alt);
+    }
+    if (keymask & uint16_t(MASK_META)) {
+        res.push_back(mod::Super);
+    }
+
+    return res;
 }
 
 bool logger_proc(unsigned int level, const char *format, ...) {
@@ -36,55 +135,92 @@ bool logger_proc(unsigned int level, const char *format, ...) {
 // Furthermore, some operating systems may choose to disable your hook if it 
 // takes too long to process.  If you need to do any extended processing, please 
 // do so by copying the event to your own queued dispatch thread.
-void dispatch_proc(uiohook_event * const event) {
-    json res = {
-        {"modifiers", json::array()}
-    };
+auto make_dispatch_proc(bool json_mode) {
+    // TODO: Fix json_mode switch (ignored for now since lambda can't
+    //       decay to funptrs if they capture stuff).
+    return [/*json_mode*/] (uiohook_event * const event) {
+        std::string keysym;
+        std::vector<mod::Mod> modifiers;
+
+        auto write_res_to_stdout = [/*json_mode,*/ &] {
+            /* if (json_mode) { */
+            /*     std::cout << res << '\n'; */
+            /* } else { */
+                std::cout << Key { keysym, modifiers }.to_dasher_code() << '\n';
+            /* } */
+        };
     
-    auto write_res_to_stdout = [&] {
-        std::cout << res << '\n';
-    };
+        // Handle special keycodes
+        if (event->type == EVENT_KEY_PRESSED) {
+            const char* escape_code =
+                special_key_to_escape_code(event->data.keyboard.keycode);
 
-    // Handle special keycodes
-    if (event->type == EVENT_KEY_PRESSED) {
-        const char* escape_code =
-            special_key_to_escape_code(event->data.keyboard.keycode);
-
-        if (escape_code) {
-            res["keysym"] = escape_code;
-            write_res_to_stdout(); return; // return to skip processing this keypress as normal key
-        } else {
-            // Continue since key presses can be normal keys
-            ;
+            if (escape_code) {
+                keysym = std::string(escape_code);
+                write_res_to_stdout(); return; // return to skip processing this keypress as normal key
+            } else {
+                // Continue since key presses can be normal keys
+                ;
+            }
         }
-    }
 
-    switch (event->type) {
-        // Ignore release events
-        case EVENT_KEY_RELEASED:
-            /* Ignore */ return;
+        switch (event->type) {
+            // Ignore release events
+            case EVENT_KEY_RELEASED:
+                /* Ignore */ return;
 
-        // Handle "normal" or "alphanumerical" keypresses
-        case EVENT_KEY_TYPED:
-            // res["keysym"] = fmt::format("%lc", event->data.keyboard.rawcode);
-            write_res_to_stdout(); return;
-
-        // Ignore everything else
-        // TODO: Log error
-        default:
-            return;
-    }
+            // Handle "normal" or "alphanumerical" keypresses
+            case EVENT_KEY_TYPED:
+                modifiers = parse_modifiers_from_keymask(event->mask);
+                keysym = event->data.keyboard.rawcode;
+                write_res_to_stdout(); return;
+            // Ignore everything else
+            // TODO: Log error
+            default:
+                return;
+        }
+    };
 }
 
-int main() {
-    // Set locale
-    setlocale(LC_CTYPE, "");
+void config_locale() {
+    // std::locale()   is the "global" locale
+    // std::locale("") is the locale configured through the locale system
+    // At startup, the global locale is set to std::locale("C"), so we need
+    // to change that if we want locale-aware functions to use the configured
+    // locale.
+    // This sets the global" locale to the default locale. 
+    std::locale::global(std::locale(""));
+
+    // The various standard io streams were initialized before main started,
+    // so they are all configured with the default global locale, std::locale("C").
+    // If we want them to behave in a locale-aware manner, including using the
+    // hopefully correct encoding for output, we need to "imbue" each iostream
+    // with the default locale.
+    // We don't have to do all of these in this simple example,
+    // but it's probably a good idea.
+    std::cin.imbue(std::locale());
+    std::cout.imbue(std::locale());
+    std::cerr.imbue(std::locale());
+    std::wcin.imbue(std::locale());
+    std::wcout.imbue(std::locale());
+    std::wcerr.imbue(std::locale());
+}
+
+int main(int argc, char** argv) {
+    bool json_mode = false;
+    if (argc > 2 && strcmp(argv[1], "--json") == 0) {
+        std::cerr << "json mode is broken!" << std::endl; // TODO/WIP
+        json_mode = true;
+    }
+
+    // set locale
+    config_locale();
 
     // Set the logger callback for library output.
     hook_set_logger_proc(&logger_proc);
     
     // Set the event callback for uiohook events.
-    hook_set_dispatch_proc(&dispatch_proc);
+    hook_set_dispatch_proc(make_dispatch_proc(json_mode));
 
     // Start the hook and block.
     // NOTE If EVENT_HOOK_ENABLED was delivered, the status will always succeed.

@@ -20,6 +20,9 @@ target_include_directories(streamc
 # compiler properties
 target_compile_options(streamc PRIVATE -Werror)
 
+# Include sources for header only for `libfmt`
+target_sources(streamc PRIVATE include/fmt/format.cc)
+
 # Fetch content for `nlohmann_json`
 FetchContent_Declare(json
   GIT_REPOSITORY https://github.com/ArthurSonzogni/nlohmann_json_cmake_fetchcontent
