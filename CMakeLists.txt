@@ -5,8 +5,10 @@ project(streamc VERSION 1.0.0 LANGUAGES CXX)
 # CMAKE modules
 include(FetchContent)
 
-# create target executable
-add_executable(streamc src/main.cpp)
+add_executable(streamc
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/special_keycodes.cpp
+)
 
 # export compilation database for language servers
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)

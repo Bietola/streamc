@@ -151,6 +151,7 @@ auto make_dispatch_proc(bool json_mode) {
         };
     
         // Handle special keycodes
+        std::optional<std::string> special_escape_code = std::nullopt;
         if (event->type == EVENT_KEY_PRESSED) {
             // If the shift+alt+c key combination is pressed, naturally terminate the program.
             if (event->data.keyboard.keycode == VC_C &&
@@ -186,9 +187,11 @@ auto make_dispatch_proc(bool json_mode) {
             if (maybe_keyinfo.has_value()) {
                 auto keyinfo = maybe_keyinfo.value();
 
-                if (keyinfo.is_modifier) {
-                    keysym = std::string(keyinfo.escape_code);
-                    write_res_to_stdout(); return; // return to skip processing this keypress as normal key
+                if (!keyinfo.is_modifier) {
+                    keysym = keyinfo.escape_code;
+                    modifiers = parse_modifiers_from_keymask(event->mask);
+
+                    write_res_to_stdout(); return;
                 } else {
                     // Ignore modifiers as they are already prefixed to other keys
                     // TODO: Give option to not ignore
@@ -208,7 +211,10 @@ auto make_dispatch_proc(bool json_mode) {
             // Handle "normal" or "alphanumerical" keypresses
             case EVENT_KEY_TYPED:
                 modifiers = parse_modifiers_from_keymask(event->mask);
+
+                // TODO: Research more secure way to convert `uint16_t` to `std::string`
                 keysym = event->data.keyboard.rawcode;
+
                 write_res_to_stdout(); return;
             // Ignore everything else
             // TODO: Log error

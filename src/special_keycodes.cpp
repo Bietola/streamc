@@ -64,28 +64,28 @@ std::optional<SpecialKeyInfo> get_special_keycode_info(uint16_t key) {
             return mk("<dwn>", false);
 
         case VC_SHIFT_L:
-            return mk("<lsh>", false);
+            return mk("<lsh>", true);
 
         case VC_SHIFT_R:
-            return mk("<rsh>", false);
+            return mk("<rsh>", true);
 
         case VC_CONTROL_L:
-            return mk("<lcl>", false);
+            return mk("<lcl>", true);
 
         case VC_CONTROL_R:
-            return mk("<rcl>", false);
+            return mk("<rcl>", true);
 
         case VC_ALT_L:
-            return mk("<lal>", false);
+            return mk("<lal>", true);
 
         case VC_ALT_R:
-            return mk("<ral>", false);
+            return mk("<ral>", true);
 
         case VC_META_L:
-            return mk("<lsu>", false);
+            return mk("<lsu>", true);
 
         case VC_META_R:
-            return mk("<rsu>", false);
+            return mk("<rsu>", true);
 
         /* case VC_CONTEXT_MENU: */
 
