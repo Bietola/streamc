@@ -19,6 +19,7 @@ target_include_directories(streamc
 
 # compiler properties
 target_compile_options(streamc PRIVATE -Werror)
+target_compile_features(streamc PRIVATE cxx_std_17)
 
 # Include sources for header only for `libfmt`
 target_sources(streamc PRIVATE include/fmt/format.cc)

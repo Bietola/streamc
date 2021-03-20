@@ -16,12 +16,12 @@ extern "C" {
 #include <nlohmann/json.hpp>
 #include <fmt/format.h>
 
-#include <special_escape_codes.h>
+#include <special_keycodes.h>
 
 using json = nlohmann::json;
 
 namespace mod {
-    // NB. The order of the listed items is reflected an abbreviated mod string
+    // NB. The order of the listed items is reflected in an abbreviated mod string
     enum Mod {
         Shift = 1,
         Ctrl,
@@ -152,12 +152,48 @@ auto make_dispatch_proc(bool json_mode) {
     
         // Handle special keycodes
         if (event->type == EVENT_KEY_PRESSED) {
-            const char* escape_code =
-                special_key_to_escape_code(event->data.keyboard.keycode);
+            // If the shift+alt+c key combination is pressed, naturally terminate the program.
+            if (event->data.keyboard.keycode == VC_C &&
+                    event->mask & uint16_t(MASK_SHIFT) &&
+                    event->mask & uint16_t(MASK_ALT)) {
+                int status = hook_stop();
+                switch (status) {
+                    case UIOHOOK_SUCCESS:
+                        // Everything is ok.
+                        break;
 
-            if (escape_code) {
-                keysym = std::string(escape_code);
-                write_res_to_stdout(); return; // return to skip processing this keypress as normal key
+                    // System level errors.
+                    case UIOHOOK_ERROR_OUT_OF_MEMORY:
+                        logger_proc(LOG_LEVEL_ERROR, "Failed to allocate memory. (%#X)", status);
+                        break;
+            
+                    case UIOHOOK_ERROR_X_RECORD_GET_CONTEXT:
+                        // NOTE This is the only platform specific error that occurs on hook_stop().
+                        logger_proc(LOG_LEVEL_ERROR, "Failed to get XRecord context. (%#X)", status);
+                        break;
+
+                    // Default error.
+                    case UIOHOOK_FAILURE:
+                    default:
+                        logger_proc(LOG_LEVEL_ERROR, "An unknown hook error occurred. (%#X)", status);
+                        break;
+                }
+            }
+
+            auto maybe_keyinfo =
+                get_special_keycode_info(event->data.keyboard.keycode);
+
+            if (maybe_keyinfo.has_value()) {
+                auto keyinfo = maybe_keyinfo.value();
+
+                if (keyinfo.is_modifier) {
+                    keysym = std::string(keyinfo.escape_code);
+                    write_res_to_stdout(); return; // return to skip processing this keypress as normal key
+                } else {
+                    // Ignore modifiers as they are already prefixed to other keys
+                    // TODO: Give option to not ignore
+                    return;
+                }
             } else {
                 // Continue since key presses can be normal keys
                 ;
