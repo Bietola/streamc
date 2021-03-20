@@ -7,7 +7,7 @@
 #include <uiohook.h>
 
 struct SpecialKeyInfo {
-    std::wstring escape_code;
+    std::string escape_code;
     bool is_modifier = false;
 };
 

@@ -1,13 +1,17 @@
 # initialize project
 cmake_minimum_required(VERSION 3.11)
-project(streamc VERSION 1.0.0 LANGUAGES CXX)
+project(streamc VERSION 1.0.0 LANGUAGES CXX C)
 
 # CMAKE modules
 include(FetchContent)
 
 add_executable(streamc
+    # CPP sources
     ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/special_keycodes.cpp
+
+    # C sources
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/rosetta_utf8.c
 )
 
 # export compilation database for language servers
@@ -21,7 +25,7 @@ target_include_directories(streamc
 
 # compiler properties
 target_compile_options(streamc PRIVATE -Werror)
-target_compile_features(streamc PRIVATE cxx_std_17)
+target_compile_features(streamc PRIVATE cxx_std_17 c_std_99)
 
 # Include sources for header only for `libfmt`
 target_sources(streamc PRIVATE include/fmt/format.cc)

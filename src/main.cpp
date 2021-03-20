@@ -6,6 +6,9 @@ extern "C" {
     #include <string.h>
     #include <uiohook.h>
     #include <wchar.h>
+    
+    // TODO: Use more popular utf8 library
+    #include <rosetta_utf8.h>
 }
 
 #include <locale>
@@ -20,7 +23,6 @@ extern "C" {
 #include <special_keycodes.h>
 
 using json = nlohmann::json;
-
 namespace mod {
     // NB. The order of the listed items is reflected in an abbreviated mod string
     enum Mod {
@@ -68,11 +70,11 @@ namespace mod {
         }
     };
 
-    std::wstring to_abbr_str(std::vector<Mod> lst) {
+    std::string to_abbr_str(std::vector<Mod> lst) {
         // NB. Exploits enum to int implicit conversion
         std::sort(lst.begin(), lst.end());
 
-        std::wstring res;
+        std::string res;
         for (const auto& ele : lst) {
             res.push_back(to_abbr(ele));
         }
@@ -83,11 +85,11 @@ namespace mod {
 struct Key {
     uint16_t keysym = 0;
     std::vector<mod::Mod> modifiers = {};
-    std::optional<std::wstring> special_escape_code;
+    std::optional<std::string> special_escape_code;
 
-    const std::wstring to_dasher_code() const& {
+    const std::string to_dasher_code() const& {
         bool close_mod = false;
-        std::wostringstream ss;
+        std::ostringstream ss;
 
         auto is_special = special_escape_code.has_value();
 
@@ -110,7 +112,8 @@ struct Key {
         if (is_special) {
             ss << special_escape_code.value();
         } else {
-            ss << keysym;
+            // Use more robust/popular utf8 library
+            ss << to_utf8(keysym);
         }
 
         if (close_mod) {
@@ -160,7 +163,7 @@ auto make_dispatch_proc(bool json_mode) {
             /* if (json_mode) { */
             /*     std::cout << res << '\n'; */
             /* } else { */
-                std::wcout << res.to_dasher_code() << '\n';
+                std::cout << res.to_dasher_code() << '\n';
             /* } */
         };
     
@@ -204,7 +207,7 @@ auto make_dispatch_proc(bool json_mode) {
                 if (!keyinfo.is_modifier) {
                     res.keysym = event->data.keyboard.rawcode;
                     res.modifiers = parse_modifiers_from_keymask(event->mask);
-                    res.special_escape_code = keyinfo.escape_code;
+                    res.special_escape_code = std::optional<std::string> { keyinfo.escape_code };
 
                     write_res_to_stdout(); return;
                 } else {
@@ -239,30 +242,6 @@ auto make_dispatch_proc(bool json_mode) {
     };
 }
 
-void config_locale() {
-    // std::locale()   is the "global" locale
-    // std::locale("") is the locale configured through the locale system
-    // At startup, the global locale is set to std::locale("C"), so we need
-    // to change that if we want locale-aware functions to use the configured
-    // locale.
-    // This sets the global" locale to the default locale. 
-    std::locale::global(std::locale(""));
-
-    // The various standard io streams were initialized before main started,
-    // so they are all configured with the default global locale, std::locale("C").
-    // If we want them to behave in a locale-aware manner, including using the
-    // hopefully correct encoding for output, we need to "imbue" each iostream
-    // with the default locale.
-    // We don't have to do all of these in this simple example,
-    // but it's probably a good idea.
-    std::cin.imbue(std::locale());
-    std::cout.imbue(std::locale());
-    std::cerr.imbue(std::locale());
-    std::wcin.imbue(std::locale());
-    std::wcout.imbue(std::locale());
-    std::wcerr.imbue(std::locale());
-}
-
 int main(int argc, char** argv) {
     bool json_mode = false;
     if (argc > 2 && strcmp(argv[1], "--json") == 0) {
@@ -271,7 +250,7 @@ int main(int argc, char** argv) {
     }
 
     // set locale
-    config_locale();
+    setlocale(LC_ALL, "");
 
     // Set the logger callback for library output.
     hook_set_logger_proc(&logger_proc);

@@ -1,0 +1,30 @@
+#!/usr/env python3
+
+import sys
+import re
+
+def replace_unicode_keysym_w_utf8():
+    print(re.sub(
+        line
+        '\d+',
+        lambda unicode_keysym: unicode_keysym.encode('utf-8')
+    ))
+
+
+normal_key_re = re.compile(r'^\d+$')
+normal_key_w_mods_re = re.compile(r'^<\w+-\d+>$')
+for line in sys.stdin:
+    line = line.strip()
+
+    if m := normal_key_re.match(line):
+
+    elif m := normal_key_w_mods_re.match(line):
+        print(re.sub(
+            line
+            '\d+',
+            lambda unicode_keysym: unicode_keysym.encode('utf-8')
+        ))
+
+
+    else:
+        print(line)
