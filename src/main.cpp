@@ -82,6 +82,7 @@ namespace mod {
 struct Key {
     const std::string keysym = "";
     const std::vector<mod::Mod> modifiers = {};
+    const bool is_special = false;
 
     Key() = default;
 
@@ -93,7 +94,16 @@ struct Key {
         auto mod_prefix = mod::to_abbr_str(modifiers);
         if (!mod_prefix.empty()) {
             close_mod = true;
-            ss << '<' << mod_prefix << '-';
+            ss << '<' << mod_prefix;
+            
+            if (is_special) {
+                ss << '+';
+            } else {
+                ss << '-';
+            }
+        } else if (is_special) {
+            close_mod = true;
+            ss << '<';
         }
 
         ss << keysym;
@@ -141,12 +151,13 @@ auto make_dispatch_proc(bool json_mode) {
     return [/*json_mode*/] (uiohook_event * const event) {
         std::string keysym;
         std::vector<mod::Mod> modifiers;
+        bool is_special = false;
 
         auto write_res_to_stdout = [/*json_mode,*/ &] {
             /* if (json_mode) { */
             /*     std::cout << res << '\n'; */
             /* } else { */
-                std::cout << Key { keysym, modifiers }.to_dasher_code() << '\n';
+                std::cout << Key { keysym, modifiers, is_special }.to_dasher_code() << '\n';
             /* } */
         };
     
@@ -190,6 +201,7 @@ auto make_dispatch_proc(bool json_mode) {
                 if (!keyinfo.is_modifier) {
                     keysym = keyinfo.escape_code;
                     modifiers = parse_modifiers_from_keymask(event->mask);
+                    is_special = true;
 
                     write_res_to_stdout(); return;
                 } else {

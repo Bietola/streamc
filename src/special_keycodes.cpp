@@ -7,85 +7,85 @@ std::optional<SpecialKeyInfo> get_special_keycode_info(uint16_t key) {
 
     switch (key) {
         case VC_ESCAPE:
-            return mk("<esc>", false);
+            return mk("esc", false);
 
         /* SKIP All Function Keys */
 
         case VC_ENTER:
-            return mk("<cr>", false);
+            return mk("cr", false);
 
         case VC_BACKSPACE:
-            return mk("<bs>", false);
+            return mk("bs", false);
 
         case VC_TAB:
-            return mk("<tab>", false);
+            return mk("tab", false);
 
         case VC_CAPS_LOCK:
-            return mk("<cps>", false);
+            return mk("cps", false);
 
         case VC_PRINTSCREEN:
-            return mk("<stp>", false);
+            return mk("stp", false);
 
         /* SKIP case VC_SCROLL_LOCK: */
 
         /* SKIP case VC_PAUSE */
 
         case VC_INSERT:
-            return mk("<ins>", false);
+            return mk("ins", false);
 
         case VC_DELETE:
-            return mk("<del>", false);
+            return mk("del", false);
 
         case VC_HOME:
-            return mk("<hm>", false);
+            return mk("hm", false);
 
         case VC_END:
-            return mk("<end>", false);
+            return mk("end", false);
 
         case VC_PAGE_UP:
-            return mk("<pup>", false);
+            return mk("pup", false);
 
         case VC_PAGE_DOWN:
-            return mk("<pdn>", false);
+            return mk("pdn", false);
 
         case VC_UP:
-            return mk("<up>", false);
+            return mk("up", false);
 
         case VC_LEFT:
-            return mk("<lft>", false);
+            return mk("lft", false);
 
         case VC_CLEAR:
-            return mk("<clr>", false);
+            return mk("clr", false);
 
         case VC_RIGHT:
-            return mk("<rgt>", false);
+            return mk("rgt", false);
 
         case VC_DOWN:
-            return mk("<dwn>", false);
+            return mk("dwn", false);
 
         case VC_SHIFT_L:
-            return mk("<lsh>", true);
+            return mk("lsh", true);
 
         case VC_SHIFT_R:
-            return mk("<rsh>", true);
+            return mk("rsh", true);
 
         case VC_CONTROL_L:
-            return mk("<lcl>", true);
+            return mk("lcl", true);
 
         case VC_CONTROL_R:
-            return mk("<rcl>", true);
+            return mk("rcl", true);
 
         case VC_ALT_L:
-            return mk("<lal>", true);
+            return mk("lal", true);
 
         case VC_ALT_R:
-            return mk("<ral>", true);
+            return mk("ral", true);
 
         case VC_META_L:
-            return mk("<lsu>", true);
+            return mk("lsu", true);
 
         case VC_META_R:
-            return mk("<rsu>", true);
+            return mk("rsu", true);
 
         /* case VC_CONTEXT_MENU: */
 
