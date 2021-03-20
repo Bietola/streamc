@@ -12,6 +12,7 @@ extern "C" {
 #include <iostream>
 #include <sstream>
 #include <algorithm>
+#include <variant>
 
 #include <nlohmann/json.hpp>
 #include <fmt/format.h>
@@ -67,11 +68,11 @@ namespace mod {
         }
     };
 
-    auto to_abbr_str(std::vector<Mod> lst) {
+    std::wstring to_abbr_str(std::vector<Mod> lst) {
         // NB. Exploits enum to int implicit conversion
         std::sort(lst.begin(), lst.end());
 
-        std::string res;
+        std::wstring res;
         for (const auto& ele : lst) {
             res.push_back(to_abbr(ele));
         }
@@ -80,15 +81,15 @@ namespace mod {
 }
 
 struct Key {
-    const std::string keysym = "";
-    const std::vector<mod::Mod> modifiers = {};
-    const bool is_special = false;
+    uint16_t keysym = 0;
+    std::vector<mod::Mod> modifiers = {};
+    std::optional<std::wstring> special_escape_code;
 
-    Key() = default;
-
-    const std::string to_dasher_code() const& {
+    const std::wstring to_dasher_code() const& {
         bool close_mod = false;
-        std::ostringstream ss;
+        std::wostringstream ss;
+
+        auto is_special = special_escape_code.has_value();
 
         // Construct modifier prefix
         auto mod_prefix = mod::to_abbr_str(modifiers);
@@ -106,7 +107,11 @@ struct Key {
             ss << '<';
         }
 
-        ss << keysym;
+        if (is_special) {
+            ss << special_escape_code.value();
+        } else {
+            ss << keysym;
+        }
 
         if (close_mod) {
             ss << '>';
@@ -149,15 +154,13 @@ auto make_dispatch_proc(bool json_mode) {
     // TODO: Fix json_mode switch (ignored for now since lambda can't
     //       decay to funptrs if they capture stuff).
     return [/*json_mode*/] (uiohook_event * const event) {
-        std::string keysym;
-        std::vector<mod::Mod> modifiers;
-        bool is_special = false;
+        Key res;
 
         auto write_res_to_stdout = [/*json_mode,*/ &] {
             /* if (json_mode) { */
             /*     std::cout << res << '\n'; */
             /* } else { */
-                std::cout << Key { keysym, modifiers, is_special }.to_dasher_code() << '\n';
+                std::wcout << res.to_dasher_code() << '\n';
             /* } */
         };
     
@@ -199,9 +202,9 @@ auto make_dispatch_proc(bool json_mode) {
                 auto keyinfo = maybe_keyinfo.value();
 
                 if (!keyinfo.is_modifier) {
-                    keysym = keyinfo.escape_code;
-                    modifiers = parse_modifiers_from_keymask(event->mask);
-                    is_special = true;
+                    res.keysym = event->data.keyboard.rawcode;
+                    res.modifiers = parse_modifiers_from_keymask(event->mask);
+                    res.special_escape_code = keyinfo.escape_code;
 
                     write_res_to_stdout(); return;
                 } else {
@@ -222,10 +225,10 @@ auto make_dispatch_proc(bool json_mode) {
 
             // Handle "normal" or "alphanumerical" keypresses
             case EVENT_KEY_TYPED:
-                modifiers = parse_modifiers_from_keymask(event->mask);
+                res.modifiers = parse_modifiers_from_keymask(event->mask);
 
                 // TODO: Research more secure way to convert `uint16_t` to `std::string`
-                keysym = event->data.keyboard.rawcode;
+                res.keysym = event->data.keyboard.rawcode;
 
                 write_res_to_stdout(); return;
             // Ignore everything else
