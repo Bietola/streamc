@@ -231,7 +231,14 @@ auto make_dispatch_proc(bool json_mode) {
                 res.modifiers = parse_modifiers_from_keymask(event->mask);
 
                 // TODO: Research more secure way to convert `uint16_t` to `std::string`
-                res.keysym = event->data.keyboard.rawcode;
+                // res.keysym = event->data.keyboard.keychar;
+                res.special_escape_code = std::optional<std::string> {
+                    std::string(to_utf8(event->data.keyboard.rawcode))
+                        + "|"
+                        + std::to_string(event->data.keyboard.keycode)
+                        + "|"
+                        + std::string(to_utf8(event->data.keyboard.keychar))
+                };
 
                 write_res_to_stdout(); return;
             // Ignore everything else
