@@ -9,6 +9,7 @@ add_executable(streamc
     # CPP sources
     ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/special_keycodes.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/keymap.cpp
 
     # C sources
     ${CMAKE_CURRENT_SOURCE_DIR}/src/rosetta_utf8.c

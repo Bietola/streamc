@@ -15,132 +15,73 @@ extern "C" {
 #include <iostream>
 #include <sstream>
 #include <algorithm>
-#include <variant>
+#include <set>
 
 #include <nlohmann/json.hpp>
 #include <fmt/format.h>
 
 #include <special_keycodes.h>
+#include <keymap.hpp>
 
 using json = nlohmann::json;
-namespace mod {
-    // NB. The order of the listed items is reflected in an abbreviated mod string
-    enum Mod {
-        Shift = 1,
-        Ctrl,
-        Alt,
-        Super
-    };
 
-    std::string tolower(const std::string& str) {
-        std::string res;
-        for (char c : str) {
-            res.push_back(std::tolower(c));
-        }
-        return res;
-    }
-
-    auto from_str(const std::string& str) {
-        if (tolower(str) == "shift") {
-            return Shift;
-        } else if (tolower(str) == "ctrl") {
-            return Ctrl;
-        } else if (tolower(str) == "alt") {
-            return Alt;
-        } else if (tolower(str) == "super") {
-            return Super;
-        } else {
-            std::cerr << "Malformed modifier: " << str << std::endl;
-            assert(false);
-        }
-    }
-
-    char to_abbr(Mod mod) {
-        switch (mod) {
-            case mod::Shift:
-                return 's';
-            case mod::Ctrl:
-                return 'c';
-            case mod::Alt:
-                return 'a';
-            case mod::Super:
-                return 'm';
-            default:
-                assert(false);
-        }
-    };
-
-    std::string to_abbr_str(std::vector<Mod> lst) {
-        // NB. Exploits enum to int implicit conversion
-        std::sort(lst.begin(), lst.end());
-
-        std::string res;
-        for (const auto& ele : lst) {
-            res.push_back(to_abbr(ele));
-        }
-        return res;
-    }
-}
-
-struct Key {
-    uint16_t keysym = 0;
-    std::vector<mod::Mod> modifiers = {};
-    std::optional<std::string> special_escape_code;
-
-    const std::string to_dasher_code() const& {
-        bool close_mod = false;
-        std::ostringstream ss;
-
-        auto is_special = special_escape_code.has_value();
-
-        // Construct modifier prefix
-        auto mod_prefix = mod::to_abbr_str(modifiers);
-        if (!mod_prefix.empty()) {
-            close_mod = true;
-            ss << '<' << mod_prefix;
-            
-            if (is_special) {
-                ss << '+';
-            } else {
-                ss << '-';
-            }
-        } else if (is_special) {
-            close_mod = true;
-            ss << '<';
-        }
-
-        if (is_special) {
-            ss << special_escape_code.value();
-        } else {
-            // Use more robust/popular utf8 library
-            ss << to_utf8(keysym);
-        }
-
-        if (close_mod) {
-            ss << '>';
-        }
-
-        return ss.str();
-    }
-};
-
-std::vector<mod::Mod> parse_modifiers_from_keymask(uint16_t keymask) {
-    std::vector<mod::Mod> res;
+auto parse_modifiers_from_keymask(uint16_t keymask) {
+    std::set<mod::Mod> res;
 
     if (keymask & uint16_t(MASK_SHIFT)) {
-        res.push_back(mod::Shift);
+        res.insert(mod::Shift);
     }
     if (keymask & uint16_t(MASK_CTRL)) {
-        res.push_back(mod::Ctrl);
+        res.insert(mod::Ctrl);
     }
     if (keymask & uint16_t(MASK_ALT)) {
-        res.push_back(mod::Alt);
+        res.insert(mod::Alt);
     }
     if (keymask & uint16_t(MASK_META)) {
-        res.push_back(mod::Super);
+        res.insert(mod::Super);
     }
 
     return res;
+}
+
+std::vector<Key> extract_real_key_combination(
+        const Key& keypress,
+        const Keymap& keymap
+    ) {
+    std::set<mod::Mod> mods;
+
+    auto mappings = keymap.mappings_for(keypress);
+
+    std::vector<Key> possible_results;
+    for (const auto& mping : mappings) {
+        auto kmap_mods = mping.modifiers;
+
+        auto diff1 = std::set_difference(
+            mods,
+            kmap_mods
+        );
+        auto diff2 = std::set_difference(
+            kmap_mods,
+            mods
+        );
+
+        // TODO: Report error below
+        /* if (!diff2.empty()) { */
+        /*     std::cerr << fmt::format( */
+        /*         "WARNING: Keypress {} doesn't reflect any keymap configuration {}\n", */
+        /*         keypress, keymap */
+        /*     ); */
+        /* } */
+
+        possible_results.push_back(
+            Key {
+                .keysym = keypress.keysym,
+                .modifiers = diff1
+            }
+        );
+    }
+
+    return possible_results;
 }
 
 bool logger_proc(unsigned int level, const char *format, ...) {
