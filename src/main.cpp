@@ -99,6 +99,7 @@ auto make_dispatch_proc(bool json_mode) {
     //       decay to funptrs if they capture stuff).
     return [/*json_mode*/] (uiohook_event * const event) {
         Key res;
+        std::optional<std::string> current_mod;
 
         auto write_res_to_stdout = [/*json_mode,*/ &] {
             /* if (json_mode) { */
@@ -146,6 +147,15 @@ auto make_dispatch_proc(bool json_mode) {
                 auto keyinfo = maybe_keyinfo.value();
 
                 if (!keyinfo.is_modifier) {
+                    auto modifiers = parse_modifiers_from_keymask(event->mask);
+
+                    if (current_mod.has_value()) {
+                        if (std::find(modifiers.begin(), modifiers.end(), current_mod.value()) != modifiers.end()) {
+                        }
+
+                        current_mod.value()
+                    }
+
                     res.keysym = event->data.keyboard.rawcode;
                     res.modifiers = parse_modifiers_from_keymask(event->mask);
                     res.special_escape_code = std::optional<std::string> { keyinfo.escape_code };
@@ -154,7 +164,9 @@ auto make_dispatch_proc(bool json_mode) {
                 } else {
                     // Ignore modifiers as they are already prefixed to other keys
                     // TODO: Give option to not ignore
-                    return;
+                    current_mods.push_back(keyinfo.escape_code);
+
+                    write_res_to_stdout(); return;
                 }
             } else {
                 // Continue since key presses can be normal keys
