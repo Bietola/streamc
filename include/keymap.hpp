@@ -4,6 +4,7 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <unordered_set>
 #include <optional>
 
 using KeySym = uint16_t;
@@ -21,12 +22,13 @@ namespace mod {
     Mod from_str(const std::string& str);
     char to_abbr(Mod mod);
     Mod from_abbr(const std::string& str);
+    Mod from_escape_code(const std::string& str);
     std::string to_abbr_str(std::vector<Mod> lst);
 }
 
 struct Key {
     uint16_t keysym = 0;
-    std::vector<mod::Mod> modifiers = {};
+    std::unordered_set<mod::Mod> modifiers = {};
     std::optional<std::string> special_escape_code;
 
     const std::string to_dasher_code() const&;

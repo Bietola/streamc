@@ -6,6 +6,7 @@
 #include <sstream>
 #include <algorithm>
 #include <rosetta_utf8.h>
+#include <unordered_set>
 
 using KeySym = uint16_t;
 
@@ -48,6 +49,21 @@ namespace mod {
         }
     }
 
+    Mod from_escape_code(const std::string& str) {
+        if (tolower(str) == "shf") {
+            return Shift;
+        } else if (tolower(str) == "c") {
+            return Ctrl;
+        } else if (tolower(str) == "a") {
+            return Alt;
+        } else if (tolower(str) == "m") {
+            return Super;
+        } else {
+            std::cerr << "Malformed abbreviation: " << str << std::endl;
+            assert(false);
+        }
+    }
+
     char to_abbr(Mod mod) {
         switch (mod) {
             case mod::Shift:
@@ -63,7 +79,7 @@ namespace mod {
         }
     };
 
-    std::string to_abbr_str(std::vector<Mod> lst) {
+    std::string to_abbr_str(std::unordered_set<Mod> lst) {
         // NB. Exploits enum to int implicit conversion
         std::sort(lst.begin(), lst.end());
 
@@ -122,7 +138,7 @@ Keymap Keymap::from_config_file(const std::string& config_file) {
         ss << line;
 
         // Parse line into keymap entry
-        std::vector<mod::Mod> kcomb_mods = {};
+        std::unordered_set<mod::Mod> kcomb_mods = {};
         std::string kcomb_sym;
         std::string resulting_keysym;
         while (true) {
@@ -134,7 +150,7 @@ Keymap Keymap::from_config_file(const std::string& config_file) {
                 ss >> resulting_keysym;
                 break;
             } else {
-                kcomb_mods.push_back(mod::from_abbr(next));
+                kcomb_mods.insert(mod::from_abbr(next));
             }
         }
 

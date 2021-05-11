@@ -1,5 +1,7 @@
 #include <special_keycodes.h>
 
+std::unordered_set<uint16_t, SpecialKeyInfo>
+
 std::optional<SpecialKeyInfo> get_special_keycode_info(uint16_t key) {
     auto mk = [] (auto... args) {
         return std::optional<SpecialKeyInfo>{ SpecialKeyInfo { args... } };
@@ -89,7 +91,13 @@ std::optional<SpecialKeyInfo> get_special_keycode_info(uint16_t key) {
 
         /* case VC_CONTEXT_MENU: */
 
-        /* SKIP Rest of Them */
+        // `<`; escaped because used in escape codes
+        case 0x003C:
+            return mk("lt", false);
+
+        // `>`; escaped because used in escape codes
+        case 0x003E:
+            return mk("gt", false);
 
         default:
             return std::nullopt;
