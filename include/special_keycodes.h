@@ -11,6 +11,6 @@ struct SpecialKeyInfo {
     bool is_modifier = false;
 };
 
-std::optional<SpecialKeyInfo> get_special_keycode_info(uint16_t key);
+std::optional<SpecialKeyInfo> get_special_keycode_info(uint16_t key, uint16_t rawcode);
 
 #endif

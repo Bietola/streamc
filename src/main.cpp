@@ -170,6 +170,11 @@ auto make_dispatch_proc(bool json_mode) {
         // Handle special keycodes
         std::optional<std::string> special_escape_code = std::nullopt;
         if (event->type == EVENT_KEY_PRESSED) {
+            // TODO/DB
+            /* std::cout << "keycode: " << to_utf8(event->data.keyboard.keycode) << "(" << event->data.keyboard.keycode << ")" << std::endl; */
+            /* std::cout << "rawcode: " << to_utf8(event->data.keyboard.rawcode) << "(" << event->data.keyboard.rawcode << ")" << std::endl; */
+            /* std::cout << "keychar: " << to_utf8(event->data.keyboard.keychar) << "(" << event->data.keyboard.keychar << ")" << std::endl; */
+
             // If the shift+alt+c key combination is pressed, naturally terminate the program.
             if (event->data.keyboard.keycode == VC_C &&
                     event->mask & uint16_t(MASK_SHIFT) &&
@@ -198,8 +203,9 @@ auto make_dispatch_proc(bool json_mode) {
                 }
             }
 
+            // std::cerr << "keycode(" << event->data.keyboard.rawcode << ")" << std::endl; // TODO/DB
             auto maybe_keyinfo =
-                get_special_keycode_info(event->data.keyboard.keycode);
+                get_special_keycode_info(event->data.keyboard.keycode, event->data.keyboard.rawcode);
 
             if (maybe_keyinfo.has_value()) {
                 auto keyinfo = maybe_keyinfo.value();
@@ -228,12 +234,21 @@ auto make_dispatch_proc(bool json_mode) {
 
             // Handle "normal" or "alphanumerical" keypresses
             case EVENT_KEY_TYPED:
+                // Check that key isn't special
+                if (get_special_keycode_info(
+                        event->data.keyboard.keycode, event->data.keyboard.rawcode
+                    ).has_value())
+                {
+                    return;
+                }
+
                 res.modifiers = parse_modifiers_from_keymask(event->mask);
 
                 // TODO: Research more secure way to convert `uint16_t` to `std::string`
                 res.keysym = event->data.keyboard.rawcode;
 
                 write_res_to_stdout(); return;
+
             // Ignore everything else
             // TODO: Log error
             default:

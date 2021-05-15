@@ -1,9 +1,21 @@
 #include <special_keycodes.h>
+#include <rosetta_utf8.h>
 
-std::optional<SpecialKeyInfo> get_special_keycode_info(uint16_t key) {
+std::optional<SpecialKeyInfo> get_special_keycode_info(uint16_t key, uint16_t rawcode) {
     auto mk = [] (auto... args) {
         return std::optional<SpecialKeyInfo>{ SpecialKeyInfo { args... } };
     };
+
+    // Escape greater than and less than, as they are themselves used in all
+    // escape sequences (which are of the form `<smthing>`).
+    // TODO/CC: Find out how to match these properly
+    switch(rawcode) {
+        case 60:
+            return mk("lt", false);
+
+        case 62:
+            return mk("gt", false);
+    }
 
     switch (key) {
         case VC_ESCAPE:
@@ -88,10 +100,7 @@ std::optional<SpecialKeyInfo> get_special_keycode_info(uint16_t key) {
             return mk("rsu", true);
 
         /* case VC_CONTEXT_MENU: */
-
-        /* SKIP Rest of Them */
-
-        default:
-            return std::nullopt;
     }
+
+    return std::nullopt;
 }
